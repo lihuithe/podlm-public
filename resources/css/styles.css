@@ -1,0 +1,26 @@
+/* 在文件末尾添加以下样式 */
+
+.task-item {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.task-item h3 {
+    margin-top: 0;
+}
+
+.task-item button {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.task-item button:hover {
+    background-color: #ff3333;
+}

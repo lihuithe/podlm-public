@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>URL-to-播客（NotebookLM中文版平替）</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 20px 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 100%;
+            padding: 0 15px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .box {
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease-in-out;
+            margin-bottom: 15px;
+        }
+        .box:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .dialogue {
+            margin-top: 15px;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .host {
+            background-color: #e9ecef;
+        }
+        .guest {
+            background-color: #d4edda;
+        }
+        .role {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .btn001 img {
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        #urlForm {
+            margin-bottom: 20px;
+        }
+        #taskInfo {
+            font-size: 14px;
+        }
+        .description {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .footer {
+            color: #999;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 750px;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL to 播客</h1>
+        <h3>NotebookLM 中文版平替</h3>
+        <!-- 添加跳转到列表页面的按钮 -->
+        <a href="/list.html" class="btn001">
+            <img src="/resources/btn.png" alt="播客专题页 - 听更多精彩内容">
+        </a>
+        <form id="urlForm" class="mb-4">
+            <div class="input-group">
+                <input type="url" id="urlInput" class="form-control" required placeholder="输入URL">
+                <button type="submit" class="btn btn-primary">提交任务</button>
+            </div>
+        </form>
+        <div class="box" id="resultBox" style="display: none;">
+            <div id="taskInfo">
+                <div class="card-body">
+                    <!-- 任务信息将在这里动态更新 -->
+                </div>
+            </div>
+        </div>
+        <details style="cursor: pointer;">
+            <summary style="color: #999; cursor: pointer;">查看使用说明</summary>
+            <ul>
+                <li><div style="color: #999;">输入任意URL，生成对话播客。（建议是公众号文章URL）</div></li>
+                <li><div style="color: #999;">本产品仅为demo，等待时间相对较久，请耐心等待，如果10分钟都没出来就重试吧，有任何报错都请刷新重试！</div></li>
+                    <li><div style="color: #999;">所有生成的播客，都可以在<a href="/list.html">播客频道(Leo啥都聊)</a>中找到</div></li>
+            </ul>
+        </details>
+        <div style="color: #999;font-size: 12px;text-align: center;margin-top: 20px;"><a href="https://tingwu.co" target="_blank" >@上海听悟智能科技有限公司</a></div>
+    </div>
+
+    <script>
+        // const API_BASE_URL = 'http://boke.tingwu.co:8811';
+        const API_BASE_URL = '';
+        const urlForm = document.getElementById('urlForm');
+        const urlInput = document.getElementById('urlInput');
+        const taskInfo = document.getElementById('taskInfo');
+        const submitButton = urlForm.querySelector('button[type="submit"]');
+        let updateInterval;
+
+        urlForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value;
+            submitButton.disabled = true;
+            submitButton.textContent = '请等待10秒...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/post_task`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url})
+                });
+                const data = await response.json();
+                localStorage.setItem('taskId', data.taskId);
+                localStorage.setItem('taskUrl', url);  // 存储URL到localStorage
+                taskInfo.innerHTML = '';
+                startTaskStatusUpdate();
+            } catch (error) {
+                console.error('提交任务失败:', error);
+            }
+
+            setTimeout(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = '提交任务';
+            }, 10000);
+        });
+
+        async function getTaskStatus() {
+            const taskId = localStorage.getItem('taskId');
+            if (!taskId) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_task?taskId=${taskId}`);
+                const data = await response.json();
+                updateTaskInfo(data);
+                return data;
+            } catch (error) {
+                console.error('获取任务状态失败:', error);
+            }
+        }
+        function updateTaskInfo(task) {
+            const resultBox = document.getElementById('resultBox');
+            resultBox.style.display = 'block'; // 显示结果盒子
+
+            taskInfo.innerHTML = `
+                <div>任务ID: ${task.taskId}</div>
+                <div>状态: ${task.status}</div>
+                <div>进度: ${task.progress}</div>
+                <div>创建时间: ${new Date(task.createdAt).toLocaleString()}</div>
+                <div>更新时间: ${new Date(task.updatedAt).toLocaleString()}</div>
+            `;
+
+            if (task.title) {
+                taskInfo.innerHTML += `<br><div><b>标题</b><br>${task.title}</div>`;
+            }
+
+            if (task.status === 'completed' && task.audioUrl) {
+                taskInfo.innerHTML += `
+                    <div>
+                    <audio controls src="${API_BASE_URL}${task.audioUrl}"></audio>
+                    <a href="${API_BASE_URL}${task.audioUrl}" target="_blank" download>下载WAV文件</a>
+                    </div>
+                `;
+                clearInterval(updateInterval);
+            }else{
+                if (task.status_details) {
+                    taskInfo.innerHTML += `
+                        <div><b>TTS当前正在合成</b><br>${task.status_details.content}</div>
+                        <div>对话句数: ${task.status_details.total_lines}，当前正在合成第 ${task.status_details.current_line} 句。</div>
+                    `;
+                }
+            }
+
+            // if (task.dialogue) {
+            //     let dialogueHtml = '<div class="dialogue"><div><b>对话</b></div>';
+            //     task.dialogue.forEach(message => {
+            //         dialogueHtml += `
+            //             <div class="message ${message.role}">
+            //                 <div class="role">${message.role === 'host' ? '主持人' : '嘉宾'}</div>
+            //                 <div>${message.content}</div>
+            //             </div>
+            //         `;
+            //     });
+            //     dialogueHtml += '</div>';
+            //     taskInfo.innerHTML += dialogueHtml;
+            // }
+        }
+
+        function startTaskStatusUpdate() {
+            clearInterval(updateInterval);
+            updateInterval = setInterval(async () => {
+                const task = await getTaskStatus();
+                if (task && task.status === 'completed') {
+                    clearInterval(updateInterval);
+                }
+            }, 5000);
+        }
+
+        // 修改页面加载事件处理函数
+        window.addEventListener('load', () => {
+            const taskId = localStorage.getItem('taskId');
+            const taskUrl = localStorage.getItem('taskUrl');
+            const resultBox = document.getElementById('resultBox');
+            
+            if (taskUrl) {
+                urlInput.value = taskUrl;  // 将存储的URL显示在输入框中
+            }
+            
+            if (taskId) {
+                getTaskStatus().then(task => {
+                    if (task) {
+                        resultBox.style.display = 'block'; // 显示结果盒子
+                        updateTaskInfo(task);
+                        if (task.status !== 'completed') {
+                            startTaskStatusUpdate();
+                        }
+                    }
+                });
+            } else {
+                resultBox.style.display = 'none'; // 如果没有任务ID，隐藏结果盒子
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leo啥都聊 - 播客频道</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f8f9fa;
+            padding-bottom: 160px;
+        }
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+        .profile-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* 添加此行 */
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .profile-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            margin-left: 15px; /* 将 margin-right 改为 margin-left */
+        }
+        .profile-text {
+            flex-grow: 1;
+        }
+        .profile-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .profile-description {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .profile-ai {
+            font-size: 12px;
+            color: #888;
+        }
+        .audio-item {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .audio-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            margin-right: 15px;
+        }
+        .audio-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 40px;
+        }
+        .audio-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .audio-meta {
+            font-size: 12px;
+            color: #888;
+        }
+        .btn-play {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ff9500;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-top: 5px;
+        }
+        .player-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        }
+        .player-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .player-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .player-title {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+            color: #333;
+        }
+        .player-progress-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .player-progress {
+            flex-grow: 1;
+            margin-right: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: #e0e0e0;
+            outline: none;
+            border-radius: 2px;
+        }
+        .player-progress::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #ff9500;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .player-progress::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #ff9500;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+        .player-time {
+            font-size: 12px;
+            color: #888;
+        }
+        .player-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .player-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #333;
+            cursor: pointer;
+        }
+        .player-btn.list-btn {
+            font-size: 16px;
+        }
+        #audioPlayer {
+            display: none;
+        }
+        #playlistContainer {
+            position: fixed;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            width: auto;
+            max-height: 50vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+        .playlist-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .playlist-item:last-child {
+            border-bottom: none;
+        }
+        .playlist-item.active {
+            background-color: #f0f0f0;
+        }
+
+        /* 添加倍速按钮的样式 */
+        .speed-btn {
+            background: none;
+            border: none;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 750px;
+                margin: 0 auto;
+            }
+            
+            .player-container {
+                left: auto;
+                right: 20px;
+                bottom: 20px;
+                width: 300px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                padding-bottom: 15px;
+            }
+            
+            #playlistContainer {
+                left: auto;
+                right: 20px;
+                bottom: 220px;
+                width: 300px;
+                max-height: 300px;
+                border-radius: 10px;
+            }
+        }
+        
+        @media screen and (max-width: 767px) {
+            @supports (padding: max(0px)) {
+                .player-container {
+                    padding-bottom: max(15px, env(safe-area-inset-bottom));
+                }
+            }
+        }
+
+        .btn2{
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .search-container {
+            margin-top: 15px;
+        }
+
+        #searchInput {
+            border-radius: 100px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #ff9500;
+            box-shadow: 0 2px 5px rgba(255, 149, 0, 0.3);
+        }
+    </style>
+    <!-- 在<head>标签内添加jQuery CDN -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-info">
+            <div class="profile-text">
+                <h1 class="profile-name">Leo啥都聊</h1>
+                <p class="profile-description" id="profileDescription">聚焦于科技、AIGC、创业、风投、商业等内容。</p>
+                <p class="profile-ai"><i class="fas fa-robot"></i> Leo 是 AI</p>
+            </div>
+            <img src="/resources/tx.jpg" alt="Leo" class="profile-image">
+        </div>
+        <!-- 添加搜索输入框 -->
+        <div class="search-container mb-3">
+            <input type="text" id="searchInput" class="form-control" placeholder="搜索节目，搜不到就用URL生成一个节目~">
+        </div>
+        <div>
+            <a href="/"><img src="/resources/btn2.png" class="btn2"></a>
+        </div>
+        <div id="audioList" class="mt-3"></div>
+    </div>
+
+    <!-- 添加播放器容器 -->
+    <div class="player-container" id="playerContainer">
+        <div class="player-info">
+            <img src="/resources/tx.jpg" alt="当前播放" class="player-image" id="playerImage">
+            <div class="player-title" id="playerTitle">选择一个音频开始播放</div>
+        </div>
+        <div class="player-progress-container">
+            <input type="range" class="player-progress" id="progressBar" min="0" max="100" value="0" disabled>
+            <span class="player-time" id="playerTime">00:00 / 00:00</span>
+        </div>
+        <div class="player-controls">
+            <button class="player-btn" id="prevBtn" disabled><i class="fas fa-step-backward"></i></button>
+            <button class="player-btn" id="playPauseBtn" disabled><i class="fas fa-play"></i></button>
+            <button class="player-btn" id="nextBtn" disabled><i class="fas fa-step-forward"></i></button>
+            <button class="speed-btn" id="speedBtn" disabled>1x</button>
+            <button class="player-btn list-btn" id="playlistBtn"><i class="fas fa-list"></i></button>
+        </div>
+        <audio id="audioPlayer" preload="auto"></audio>
+    </div>
+
+    <div id="playlistContainer"></div>
+    <div style="color: #999;font-size: 12px;text-align: center;margin: 0 0 20px 0px;"><a style="color: #999;" href="https://tingwu.co" target="_blank" >@上海听悟智能科技有限公司</a></div>
+
+    <!-- 替换原有的<script>标签内容为以下代码 -->
+    <script>
+    $(document).ready(function() {
+        const API_BASE_URL = '';
+        let currentAudioIndex = -1;
+        let audioList = [];
+
+        // 添加这个函数来初始化播放速度
+        function initializePlaybackSpeed() {
+            const savedSpeed = localStorage.getItem('audioPlaybackSpeed');
+            if (savedSpeed) {
+                const speed = parseFloat(savedSpeed);
+                $('#audioPlayer')[0].playbackRate = speed;
+                $('#speedBtn').text(speed + 'x');
+            }
+        }
+
+        // 在文档加载完成后立即调用这个函数
+        initializePlaybackSpeed();
+
+        function fetchAudios() {
+            $.ajax({
+                url: `${API_BASE_URL}/get_list`,
+                method: 'GET',
+                success: function(data) {
+                    audioList = data.filter(audio => audio.audioUrl);  // 只保留有audioUrl的项
+                    console.log(`获取到的音频总数: ${data.length}`);
+                    console.log(`过滤后的音频数量: ${audioList.length}`);
+                    displayAudios(audioList);
+                    updatePlaylist();
+                },
+                error: function(error) {
+                    console.error('获取音频列表失败:', error);
+                }
+            });
+        }
+
+        function displayAudios(audios) {
+            const $audioList = $('#audioList');
+            $audioList.empty();
+
+            audios.forEach((audio, index) => {
+                if (!audio.audioUrl) {
+                    console.log(`跳过没有audioUrl的音频项: ${audio.title || '无标题'}`);
+                    return;
+                }
+
+                const createdAt = new Date(audio.createdAt);
+                const formattedDate = `${createdAt.getFullYear()}/${(createdAt.getMonth() + 1).toString().padStart(2, '0')}/${createdAt.getDate().toString().padStart(2, '0')} ${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}:${createdAt.getSeconds().toString().padStart(2, '0')}`;
+
+                const $audioItem = $('<div>').addClass('audio-item').html(`
+                    <img src="/resources/tx.jpg" alt="${audio.title}" class="audio-image">
+                    <div class="audio-info">
+                        <div class="audio-title">${audio.title || '无标题'}</div>
+                        <div class="audio-meta">
+                            <span class="ml-2">${formattedDate}</span>
+                        </div>
+                    </div>
+                    <button class="btn-play">
+                        <i class="fas fa-play"></i>
+                    </button>
+                `);
+
+                $audioItem.find('.btn-play').on('click', function() {
+                    playAudio(index);
+                });
+
+                $audioList.append($audioItem);
+            });
+
+            console.log(`显示的音频数量: ${$audioList.children().length}`);
+            console.log(`audioList数组长度: ${audios.length}`);
+
+            // 添加这一行
+            handleSearch();
+        }
+
+        function playAudio(index) {
+            // $('.profile-description').html(`${$('.profile-description').html()} index: ${index}`);
+            currentAudioIndex = index;
+            const audio = audioList[index];
+            const $player = $('#audioPlayer');
+            const $playerContainer = $('#playerContainer');
+            const $playerTitle = $('#playerTitle');
+            const $playPauseBtn = $('#playPauseBtn');
+
+            $player.attr('src', `${API_BASE_URL}${audio.audioUrl}`);
+            $playerTitle.text(audio.title || '无标题');
+            $('body').addClass('player-active');
+
+            $player[0].play();
+            $playPauseBtn.html('<i class="fas fa-pause"></i>');
+
+            updatePlayerControls();
+            updatePlaylist();
+
+            $('#progressBar').val(0).prop('disabled', false);
+            updateProgressBar();
+
+            // 替换为:
+            const savedSpeed = localStorage.getItem('audioPlaybackSpeed');
+            if (savedSpeed) {
+                updateSpeed(parseFloat(savedSpeed));
+            }
+
+            $('#playPauseBtn, #prevBtn, #nextBtn, #speedBtn').prop('disabled', false);
+        }
+
+        function updatePlayerControls() {
+            $('#prevBtn').prop('disabled', currentAudioIndex <= 0);
+            $('#nextBtn').prop('disabled', currentAudioIndex >= audioList.length - 1);
+        }
+
+        function togglePlayPause() {
+            const $player = $('#audioPlayer')[0];
+            const $playPauseBtn = $('#playPauseBtn');
+
+            if ($player.paused) {
+                $player.play();
+                $playPauseBtn.html('<i class="fas fa-pause"></i>');
+                $('body').addClass('player-active');
+            } else {
+                $player.pause();
+                $playPauseBtn.html('<i class="fas fa-play"></i>');
+            }
+        }
+
+        function playPrevious() {
+            if (currentAudioIndex > 0) {
+                playAudio(currentAudioIndex - 1);
+            }
+        }
+
+        function playNext() {
+            if (currentAudioIndex < audioList.length - 1) {
+                playAudio(currentAudioIndex + 1);
+            } else {
+                handleAudioEnd();
+            }
+        }
+
+        function setAudioProgress(event) {
+            const $player = $('#audioPlayer')[0];
+            const $progressBar = $('#progressBar');
+            
+            if ($player.duration) {
+                const clickPosition = (event.pageX - $progressBar.offset().left) / $progressBar.width();
+                const newTime = clickPosition * $player.duration;
+                
+                if (!isNaN(newTime) && isFinite(newTime)) {
+                    $player.currentTime = newTime;
+                    updateProgressBar();
+                }
+            }
+        }
+
+        function updateProgressBar() {
+            const $player = $('#audioPlayer')[0];
+            const $progressBar = $('#progressBar');
+            const $playerTime = $('#playerTime');
+            
+            if ($player.duration) {
+                const progress = ($player.currentTime / $player.duration) * 100;
+                $progressBar.val(progress);
+                
+                const currentTime = formatTime($player.currentTime);
+                const duration = formatTime($player.duration);
+                $playerTime.text(`${currentTime} / ${duration}`);
+            }
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function togglePlaylist(event) {
+            event.stopPropagation();
+            const $playlistContainer = $('#playlistContainer');
+            $playlistContainer.toggle();
+            if ($playlistContainer.is(':visible')) {
+                updatePlaylist();
+            }
+        }
+
+        function updatePlaylist() {
+            const $playlistContainer = $('#playlistContainer');
+            $playlistContainer.empty();
+
+            audioList.forEach((audio, index) => {
+                const $playlistItem = $('<div>')
+                    .addClass(`playlist-item${index === currentAudioIndex ? ' active' : ''}`)
+                    .text(audio.title || '无标题')
+                    .on('click', function() {
+                        playAudio(index);
+                        togglePlaylist(event);
+                    });
+                $playlistContainer.append($playlistItem);
+            });
+        }
+
+        fetchAudios();
+
+        $('#playPauseBtn').on('click', togglePlayPause);
+        $('#prevBtn').on('click', playPrevious);
+        $('#nextBtn').on('click', playNext);
+        $('#audioPlayer').on('timeupdate', updateProgressBar);
+        $('#audioPlayer').on('ended', playNext);
+        $('#playlistBtn').on('click', togglePlaylist);
+
+        $('#progressBar').off('click mousedown').on('mousedown touchstart', function(event) {
+            event.preventDefault();
+            
+            const updateProgress = function(e) {
+                const pageX = e.type.includes('touch') ? e.originalEvent.touches[0].pageX : e.pageX;
+                const $progressBar = $('#progressBar');
+                const $player = $('#audioPlayer')[0];
+                
+                if ($player.duration) {
+                    const clickPosition = (pageX - $progressBar.offset().left) / $progressBar.width();
+                    const newTime = clickPosition * $player.duration;
+                    
+                    if (!isNaN(newTime) && isFinite(newTime)) {
+                        $player.currentTime = newTime;
+                        updateProgressBar();
+                    }
+                }
+            };
+            
+            updateProgress(event);
+            
+            $(document).on('mousemove touchmove', updateProgress);
+            
+            $(document).one('mouseup touchend', function() {
+                $(document).off('mousemove touchmove', updateProgress);
+            });
+        });
+
+        // 添加点击进度条的事件处理
+        $('#progressBar').on('click', function(event) {
+            const $progressBar = $(this);
+            const $player = $('#audioPlayer')[0];
+            
+            if ($player.duration) {
+                const clickPosition = (event.pageX - $progressBar.offset().left) / $progressBar.width();
+                const newTime = clickPosition * $player.duration;
+                console.log('newTime', newTime);
+                console.log('$player.currentTime',$player.currentTime);
+                if (!isNaN(newTime) && isFinite(newTime)) {
+                    $player.currentTime = newTime;
+                    updateProgressBar();
+                    console.log('222',$player.currentTime);
+                }
+                console.log('$player.currentTime',$player.currentTime);
+            }
+        });
+
+        $('#audioPlayer').on('loadedmetadata', function() {
+            updateProgressBar();
+            const duration = formatTime(this.duration);
+            $('#playerTime').text(`00:00 / ${duration}`);
+        });
+
+        $(document).on('click', function(event) {
+            const $playlistContainer = $('#playlistContainer');
+            const $playlistBtn = $('#playlistBtn');
+            if ($playlistContainer.is(':visible') && !$playlistContainer.is(event.target) && $playlistContainer.has(event.target).length === 0 && !$playlistBtn.is(event.target)) {
+                $playlistContainer.hide();
+            }
+        });
+
+        // 修改速度相关的变量和函数
+        const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2];
+        let currentSpeedIndex = speedOptions.indexOf(parseFloat(localStorage.getItem('audioPlaybackSpeed')) || 1);
+        if (currentSpeedIndex === -1) currentSpeedIndex = 2; // 默认为 1x
+
+        function updateSpeed(speed) {
+            $('#audioPlayer')[0].playbackRate = speed;
+            $('#speedBtn').text(speed + 'x');
+            localStorage.setItem('audioPlaybackSpeed', speed);
+        }
+
+        // 修改速度按钮点击事件
+        $('#speedBtn').on('click', function() {
+            currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length;
+            const newSpeed = speedOptions[currentSpeedIndex];
+            updateSpeed(newSpeed);
+        });
+
+        // 添加以下CSS样式
+        $('<style>')
+            .prop("type", "text/css")
+            .html(`
+                .player-container:not(.active) {
+                    opacity: 1;
+                }
+                .player-container:not(.active) .player-title {
+                    color: #888;
+                }
+            `)
+            .appendTo("head");
+
+        // 修改 handleAudioEnd 函数
+        function handleAudioEnd() {
+            const $playPauseBtn = $('#playPauseBtn');
+            $playPauseBtn.html('<i class="fas fa-play"></i>');
+        }
+
+        // 定义一个新的函数来处理搜索
+        function handleSearch() {
+            const searchTerm = $('#searchInput').val().toLowerCase();
+            $('.audio-item').each(function() {
+                const title = $(this).find('.audio-title').text().toLowerCase();
+                if (title.includes(searchTerm)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        // 为搜索输入框添加事件监听器
+        $('#searchInput').on('input', handleSearch);
+    });
+    </script>
+</body>
+</html>
